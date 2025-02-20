@@ -1,0 +1,15 @@
+services:
+  ollama:
+    container_name: ollama
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/arm64
+    ports:
+      - "8080:8080"
+    volumes:
+      - ollama:/tmp/.ollama
+
+volumes:
+  ollama:

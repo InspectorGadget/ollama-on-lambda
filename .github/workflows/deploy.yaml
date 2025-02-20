@@ -1,0 +1,62 @@
+name: Deploy Terraform Module
+on:
+  workflow_dispatch:
+jobs:
+  generate-terraform-plan:
+    name: Generate Terraform Plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Terraform Init
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.1.7
+      - name: Terraform Plan
+        run: |
+          terraform init
+          terraform plan \
+            -out="plan.out"
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: plan.out
+  deploy:
+    name: Deploy to environment
+    needs: generate-terraform-plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: 'arm64,arm'
+      - uses: docker/setup-buildx-action@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Terraform Init
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.1.7
+      - name: Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+      - name: Install Python 3
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+      - name: Terraform Apply
+        run: |
+          terraform init
+          terraform apply plan.out
