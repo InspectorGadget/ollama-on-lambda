@@ -1,6 +1,7 @@
 # ECR Repository
 resource "aws_ecr_repository" "ecr" {
   name         = "${var.project_name}-runtime"
+  force_delete = true
 }
 
 # Build Image
