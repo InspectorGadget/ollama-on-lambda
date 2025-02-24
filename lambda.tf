@@ -14,6 +14,7 @@ resource "aws_lambda_function" "ollama" {
   image_uri    = "${aws_ecr_repository.ecr.repository_url}:latest"
   role         = aws_iam_role.lambda.arn
   memory_size  = 8192
+  timeout      = 600
 
   environment {
     variables = {
